@@ -11,7 +11,8 @@ import {
   Menu, 
   X,
   ShieldCheck,
-  HelpCircle
+  HelpCircle,
+  User
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -36,7 +37,9 @@ export default function Sidebar() {
     { label: 'Policy Dashboard', path: '/govt-dashboard', icon: ShieldCheck },
   ] : [];
 
-  const navItems = [...baseItems, { label: 'Support', path: '/support', icon: HelpCircle }];
+  const navItems = userRole === 'citizen' 
+    ? [...baseItems, { label: 'Profile', path: '/profile', icon: User }, { label: 'Support', path: '/support', icon: HelpCircle }]
+    : [...baseItems, { label: 'Support', path: '/support', icon: HelpCircle }];
 
   return (
     <>

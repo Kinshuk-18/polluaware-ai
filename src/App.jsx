@@ -10,6 +10,7 @@ import GovtDashboard from './pages/govt/GovtDashboard';
 import SmartRoute from './pages/citizen/SmartRoute';
 import Layout from './components/Layout';
 import Support from './pages/Support';
+import Profile from './pages/citizen/Profile';
 
 // Custom route to redirect authenticated users away from auth pages
 function PublicRoute({ children }) {
@@ -48,6 +49,17 @@ function AppRoutes() {
           <ProtectedRoute allowedRole="citizen">
             <Layout>
               <SmartRoute />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute allowedRole="citizen">
+            <Layout>
+              <Profile />
             </Layout>
           </ProtectedRoute>
         } 

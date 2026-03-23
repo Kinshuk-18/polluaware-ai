@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 // Navbar removed since Layout wraps this
 import { useAuth } from '../../context/AuthContext';
 import { db, auth } from '../../services/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc, getDoc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, Circle, Marker, Tooltip } from 'react-leaflet';
 import { MapPin, AlertTriangle, Activity, LogOut } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -35,11 +35,36 @@ const iconGreen = createCustomIcon('#10B981'); // Tailwind Emerald-500
 export default function CitizenDashboard() {
   const { currentUser } = useAuth();
   const [hotspots, setHotspots] = useState([]);
+  const [selectedCity, setSelectedCity] = useState('Delhi NCR');
+  const [isCityLoading, setIsCityLoading] = useState(true);
   const navigate = useNavigate();
 
+  const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Chennai'];
+
   useEffect(() => {
+    const fetchUserCity = async () => {
+      if (currentUser?.uid) {
+        try {
+          const docRef = doc(db, 'users', currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists() && docSnap.data().city) {
+            setSelectedCity(docSnap.data().city);
+          }
+        } catch (error) {
+          console.error("Error fetching user city:", error);
+        }
+      }
+      setIsCityLoading(false);
+    };
+    fetchUserCity();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (isCityLoading) return;
+
     const hotspotsCollection = collection(db, 'aqi_hotspots');
-    const unsubscribe = onSnapshot(hotspotsCollection, (snapshot) => {
+    const q = query(hotspotsCollection, where('city', '==', selectedCity));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       const hotspotsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -48,7 +73,7 @@ export default function CitizenDashboard() {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [selectedCity, isCityLoading]);
 
   const handleLogout = async () => {
     try {
@@ -98,13 +123,24 @@ export default function CitizenDashboard() {
             </h1>
             <p className="text-gray-600 mt-1">Hello, {currentUser?.email}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#0F172A] hover:bg-slate-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="px-4 py-2 border border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-700 bg-white"
+            >
+              {cities.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#0F172A] hover:bg-slate-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Metrics Row */}
@@ -170,62 +206,49 @@ export default function CitizenDashboard() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              {console.log("Hotspots loaded for map:", hotspots)}
 
               {hotspots.map((spot) => {
+                // 1. Correctly extract from a Firestore GeoPoint Object
+                // We check both standard 'latitude' and the private '_lat' just in case of serialization differences
+                const lat = spot.location ? (spot.location.latitude || spot.location._lat) : null;
+                const lng = spot.location ? (spot.location.longitude || spot.location._long) : null;
                 const aqi = Number(spot.aqi);
-                let pathOptions = { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.4 };
-                if (aqi > 200) {
-                  pathOptions = { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.4 };
-                } else if (aqi > 100) {
-                  pathOptions = { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.4 };
-                }
 
-                const lat = parseFloat(spot.lat || (spot.coordinates && spot.coordinates[0]));
-                const lng = parseFloat(spot.lng || (spot.coordinates && spot.coordinates[1]));
+                // 2. Safety check: If no valid coordinates, skip drawing
+                if (!lat || !lng || isNaN(aqi)) return null;
 
-                if (isNaN(lat) || isNaN(lng)) return null;
+                // 3. Color Logic
+                let circleColor = '#10b981'; // Green
+                if (aqi > 200) circleColor = '#ef4444'; // Red
+                else if (aqi > 100) circleColor = '#f59e0b'; // Yellow
 
                 return (
                   <Circle
                     key={spot.id}
                     center={[lat, lng]}
                     radius={3000}
-                    pathOptions={pathOptions}
+                    pathOptions={{ color: circleColor, fillColor: circleColor, fillOpacity: 0.5 }}
                   >
                     <Popup className="rounded-lg shadow-sm border-0">
                       <div className="p-1 min-w-[200px]">
                         <h3 className="font-bold text-[#0F172A] border-b border-gray-100 pb-2 mb-2 text-lg">
                           {spot.name || 'Unknown Location'}
                         </h3>
-                        <div className="space-y-1.5 text-sm">
-                          <p className="flex justify-between items-center gap-4">
-                            <span className="text-gray-500 font-medium">AQI Element:</span>
-                            <span className={`font-bold text-lg ${getCategoryColor(Number(spot.aqi))}`}>
-                              {spot.aqi}
-                            </span>
+                        <p className="font-medium text-gray-600 mb-1">
+                          AQI: <span className="font-bold" style={{ color: circleColor }}>{aqi}</span>
+                        </p>
+                        <p className="text-sm text-gray-500 mb-2">Status: {spot.category}</p>
+                        {spot.cause && (
+                          <p className="text-xs text-gray-400 border-t pt-2 mt-2">
+                            Cause: <span className="text-gray-600">{spot.cause}</span>
                           </p>
-                          <p className="flex justify-between items-center gap-4">
-                            <span className="text-gray-500 font-medium">Category:</span>
-                            <span className={`font-semibold px-2 py-0.5 rounded-full text-xs ${Number(spot.aqi) > 200 ? 'bg-red-50 text-red-700' :
-                                Number(spot.aqi) > 100 ? 'bg-amber-50 text-amber-700' :
-                                  'bg-emerald-50 text-emerald-700'
-                              }`}>
-                              {spot.category || (Number(spot.aqi) > 200 ? 'High Risk' : Number(spot.aqi) > 100 ? 'Moderate' : 'Good')}
-                            </span>
-                          </p>
-                          {spot.cause && (
-                            <div className="mt-3 pt-2 border-t border-gray-50">
-                              <span className="block text-xs text-gray-400 font-medium mb-1">PRIMARY CAUSE</span>
-                              <span className="block text-sm text-slate-700">{spot.cause}</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </Popup>
                   </Circle>
                 );
               })}
-
             </MapContainer>
           </div>
         </div>
