@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
+// Navbar removed since Layout wraps this
 import { useAuth } from '../../context/AuthContext';
 import { db, auth } from '../../services/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Popup, Circle } from 'react-leaflet';
 import { MapPin, AlertTriangle, Activity, LogOut } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -87,8 +87,7 @@ export default function CitizenDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen flex flex-col">
 
       <main className="max-w-7xl w-full mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-1">
         {/* Top Navigation: Clean header with Welcome message and Logout */}
@@ -172,12 +171,26 @@ export default function CitizenDashboard() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {hotspots.map((spot) => (
-                spot.coordinates && spot.coordinates.length === 2 && (
-                  <Marker
+              {hotspots.map((spot) => {
+                const aqi = Number(spot.aqi);
+                let pathOptions = { color: '#10b981', fillColor: '#10b981', fillOpacity: 0.4 };
+                if (aqi > 200) {
+                  pathOptions = { color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.4 };
+                } else if (aqi > 100) {
+                  pathOptions = { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.4 };
+                }
+
+                const lat = parseFloat(spot.lat || (spot.coordinates && spot.coordinates[0]));
+                const lng = parseFloat(spot.lng || (spot.coordinates && spot.coordinates[1]));
+
+                if (isNaN(lat) || isNaN(lng)) return null;
+
+                return (
+                  <Circle
                     key={spot.id}
-                    position={[spot.coordinates[0], spot.coordinates[1]]}
-                    icon={getMarkerIcon(Number(spot.aqi))}
+                    center={[lat, lng]}
+                    radius={3000}
+                    pathOptions={pathOptions}
                   >
                     <Popup className="rounded-lg shadow-sm border-0">
                       <div className="p-1 min-w-[200px]">
@@ -209,9 +222,10 @@ export default function CitizenDashboard() {
                         </div>
                       </div>
                     </Popup>
-                  </Marker>
-                )
-              ))}
+                  </Circle>
+                );
+              })}
+
             </MapContainer>
           </div>
         </div>
