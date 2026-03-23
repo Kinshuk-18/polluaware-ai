@@ -11,6 +11,11 @@ import SmartRoute from './pages/citizen/SmartRoute';
 import Layout from './components/Layout';
 import Support from './pages/Support';
 import Profile from './pages/citizen/Profile';
+import Complaints from './pages/citizen/Complaints';
+import ManageComplaints from './pages/govt/ManageComplaints';
+import HotspotList from './pages/govt/HotspotList';
+import AIPolicyEngine from './pages/govt/AIPolicyEngine';
+import SourceIdentification from './pages/govt/SourceIdentification';
 
 // Custom route to redirect authenticated users away from auth pages
 function PublicRoute({ children }) {
@@ -90,7 +95,51 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="citizen">
             <Layout>
-              <div className="p-8 text-2xl font-bold">Complaints Module Coming Soon...</div>
+              <Complaints />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/manage-complaints" 
+        element={
+          <ProtectedRoute allowedRole="govt">
+            <Layout>
+              <ManageComplaints />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/govt-hotspots" 
+        element={
+          <ProtectedRoute allowedRole="govt">
+            <Layout>
+              <HotspotList />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/govt-source-id" 
+        element={
+          <ProtectedRoute allowedRole="govt">
+            <Layout>
+              <SourceIdentification />
+            </Layout>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/govt-ai-suggestions" 
+        element={
+          <ProtectedRoute allowedRole="govt">
+            <Layout>
+              <AIPolicyEngine />
             </Layout>
           </ProtectedRoute>
         } 

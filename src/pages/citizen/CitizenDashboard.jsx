@@ -36,27 +36,37 @@ export default function CitizenDashboard() {
   const { currentUser } = useAuth();
   const [hotspots, setHotspots] = useState([]);
   const [selectedCity, setSelectedCity] = useState('Delhi NCR');
+  const [userName, setUserName] = useState('');
   const [isCityLoading, setIsCityLoading] = useState(true);
   const navigate = useNavigate();
 
   const cities = ['Delhi NCR', 'Mumbai', 'Bangalore', 'Chennai'];
 
   useEffect(() => {
-    const fetchUserCity = async () => {
+    const fetchUserCityAndName = async () => {
       if (currentUser?.uid) {
         try {
           const docRef = doc(db, 'users', currentUser.uid);
           const docSnap = await getDoc(docRef);
-          if (docSnap.exists() && docSnap.data().city) {
-            setSelectedCity(docSnap.data().city);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Grab the city for the filter
+            if (data.city) {
+              setSelectedCity(data.city);
+            }
+            // Grab the name for the greeting
+            if (data.name) {
+              setUserName(data.name);
+            }
           }
         } catch (error) {
-          console.error("Error fetching user city:", error);
+          console.error("Error fetching user data:", error);
         }
       }
       setIsCityLoading(false);
     };
-    fetchUserCity();
+    fetchUserCityAndName();
   }, [currentUser]);
 
   useEffect(() => {
@@ -119,9 +129,11 @@ export default function CitizenDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-[#0F172A]">
-              Welcome to the Citizen Panel
+              Welcome back, {userName || 'Citizen'}
             </h1>
-            <p className="text-gray-600 mt-1">Hello, {currentUser?.email}</p>
+            <p className="text-gray-500 mt-1 font-medium">
+              Here is your real-time pollution overview for {selectedCity}.
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <select

@@ -12,7 +12,10 @@ import {
   X,
   ShieldCheck,
   HelpCircle,
-  User
+  User,
+  List,
+  Sparkles,
+  PieChart
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -34,7 +37,11 @@ export default function Sidebar() {
     { label: 'Smart Route AI', path: '/smart-route', icon: MapPin },
     { label: 'Raise Complaint', path: '/complaints', icon: MessageSquareWarning },
   ] : userRole === 'govt' ? [
-    { label: 'Policy Dashboard', path: '/govt-dashboard', icon: ShieldCheck },
+    { label: 'Dashboard', path: '/govt-dashboard', icon: ShieldCheck },
+    { label: 'Source Analysis', path: '/govt-source-id', icon: PieChart },
+    { label: 'Hotspot List', path: '/govt-hotspots', icon: MapPin },
+    { label: 'AI Suggestions', path: '/govt-ai-suggestions', icon: Sparkles },
+    { label: 'Citizen Complaints', path: '/manage-complaints', icon: List },
   ] : [];
 
   const navItems = userRole === 'citizen' 
