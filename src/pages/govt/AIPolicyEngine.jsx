@@ -28,13 +28,35 @@ export default function AIPolicyEngine() {
     return 'text-red-600';
   };
 
-  const generateActionRecommendation = (cause, aqi) => {
-    if (cause?.includes('Stubble')) return 'Deploy immediate satellite monitoring, dispatch mobile firefighting units, and enforce strict penalties in the surrounding agricultural sectors.';
-    if (cause?.includes('Construction')) return 'Deploy anti-smog guns, halt local construction activities immediately, and issue fines for uncovered raw materials.';
-    if (cause?.includes('Vehicular')) return 'Divert heavy commercial traffic, increase frequency of public transport, and activate dynamic toll pricing on key arteries.';
-    if (cause?.includes('Industrial')) return 'Dispatch inspection teams to nearby factories, temporarily shut down non-compliant units, and enforce strict emission scrubbing protocols.';
-    if (aqi > 200) return 'Initiate emergency protocol GRAP Stage III. Deploy water sprinklers, ban non-essential construction, and mandate remote work where possible.';
-    return 'Increase monitoring frequency and deploy additional mobile air quality testing units to pinpoint exact point sources.';
+  const generateAIAction = (cause, aqi) => {
+    const safeCause = (cause || '').toLowerCase();
+    
+    // Severe / Red Zone
+    if (aqi > 200) {
+      if (safeCause.includes('stubble')) {
+        return "URGENT: Deploy mobile extinguishing units. Fine satellite-identified coordinates. Mandate immediate use of bio-decomposers.";
+      }
+      if (safeCause.includes('construction')) {
+        return "HALT ORDER: Instantly suspend all construction activities within a 5km radius. Deploy heavy anti-smog water cannons.";
+      }
+      if (safeCause.includes('vehicular') || safeCause.includes('traffic')) {
+        return "RESTRICTION: Initiate odd-even traffic rationing in this zone. Reroute heavy commercial vehicles immediately.";
+      }
+      if (safeCause.includes('industrial')) {
+        return "CRITICAL: Issue show-cause notice to local factories. Mandate 50% capacity reduction until AQI stabilizes.";
+      }
+      return "EMERGENCY: Initiate GRAP Stage III protocols immediately. Restrict all non-essential outdoor activities.";
+    } 
+    
+    // Moderate / Yellow Zone
+    if (aqi >= 101 && aqi <= 199) {
+      if (safeCause.includes('stubble')) return "Issue advisory to local contractors and increase satellite monitoring frequency.";
+      if (safeCause.includes('vehicular') || safeCause.includes('traffic')) return "Optimize traffic light timings to reduce idling. Increase road sweeping.";
+      return "Increase road sweeping and issue advisory notices to identified local emission sources.";
+    }
+
+    // Good / Green Zone
+    return "Maintain current green protocols. Continue routine localized air quality monitoring.";
   };
 
   return (
@@ -101,7 +123,7 @@ export default function AIPolicyEngine() {
                       Recommended Action
                     </p>
                     <p className="text-base font-medium text-indigo-900 leading-relaxed">
-                      {generateActionRecommendation(spot.cause, aqi)}
+                      {generateAIAction(spot.cause, aqi)}
                     </p>
                   </div>
                 </div>

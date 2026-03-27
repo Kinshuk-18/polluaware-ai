@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../services/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { ShieldCheck, MapPin, AlertTriangle, MessageSquareWarning, Activity, Sparkles } from 'lucide-react';
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ShieldCheck, MapPin, AlertTriangle, MessageSquareWarning, Activity, Sparkles, Send, Bell } from 'lucide-react';
 import { MapContainer, TileLayer, Circle, Marker, Tooltip as LeafletTooltip, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 // Fix for default marker icons in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -38,6 +38,11 @@ export default function GovtDashboard() {
   const [hotspots, setHotspots] = useState([]);
   const [complaints, setComplaints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // New states for Emergency Broadcast
+  const [broadcastMsg, setBroadcastMsg] = useState('');
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastSuccess, setBroadcastSuccess] = useState('');
 
   const CITIES = ['All', 'Delhi NCR', 'Mumbai', 'Bangalore', 'Chennai'];
 
@@ -86,7 +91,32 @@ export default function GovtDashboard() {
     value: causeCount[key]
   })).sort((a, b) => b.value - a.value);
 
+  const forecastData = [
+    { time: '00:00', aqi: 80 }, { time: '02:00', aqi: 85 }, { time: '04:00', aqi: 110 }, { time: '06:00', aqi: 150 },
+    { time: '08:00', aqi: 240 }, { time: '10:00', aqi: 220 }, { time: '12:00', aqi: 190 }, { time: '14:00', aqi: 150 },
+    { time: '16:00', aqi: 160 }, { time: '18:00', aqi: 250 }, { time: '20:00', aqi: 280 }, { time: '22:00', aqi: 180 },
+  ];
 
+  const handleSendBroadcast = async (e) => {
+    e.preventDefault();
+    if (!broadcastMsg.trim()) return;
+    setBroadcastSending(true);
+    try {
+      await addDoc(collection(db, 'broadcasts'), {
+        message: broadcastMsg,
+        city: selectedCity,
+        timestamp: serverTimestamp(),
+        active: true
+      });
+      setBroadcastSuccess('Critical alert broadcasted successfully!');
+      setBroadcastMsg('');
+      setTimeout(() => setBroadcastSuccess(''), 3000);
+    } catch (err) {
+      console.error('Error sending broadcast:', err);
+    } finally {
+      setBroadcastSending(false);
+    }
+  };
   const getMarkerIcon = (aqi) => {
     if (aqi <= 100) return iconGreen;
     if (aqi <= 200) return iconYellow;
@@ -125,6 +155,8 @@ export default function GovtDashboard() {
           </select>
         </div>
       </div>
+
+
 
       {/* Top Row: Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -287,6 +319,32 @@ export default function GovtDashboard() {
         </div>
       </div>
 
+      {/* 24-Hour AI AQI Forecast */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Sparkles className="text-indigo-600" size={24} />
+          <h2 className="text-xl font-bold text-slate-800">24-Hour AI AQI Forecast</h2>
+        </div>
+        <div className="w-full h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={forecastData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorAqi" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="time" stroke="#94a3b8" tick={{ fill: '#64748b' }} tickLine={false} axisLine={false} />
+              <YAxis stroke="#94a3b8" tick={{ fill: '#64748b' }} tickLine={false} axisLine={false} />
+              <RechartsTooltip
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+              <Area type="monotone" dataKey="aqi" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorAqi)" activeDot={{ r: 6, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
     </div>
   );

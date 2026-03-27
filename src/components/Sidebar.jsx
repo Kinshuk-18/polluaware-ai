@@ -3,19 +3,20 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../services/firebase';
 import { signOut } from 'firebase/auth';
-import { 
-  LayoutDashboard, 
-  MapPin, 
-  MessageSquareWarning, 
-  LogOut, 
-  Menu, 
+import {
+  LayoutDashboard,
+  MapPin,
+  MessageSquareWarning,
+  LogOut,
+  Menu,
   X,
   ShieldCheck,
   HelpCircle,
-  User,
   List,
   Sparkles,
-  PieChart
+  PieChart,
+  Radio,
+  User
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -38,13 +39,14 @@ export default function Sidebar() {
     { label: 'Raise Complaint', path: '/complaints', icon: MessageSquareWarning },
   ] : userRole === 'govt' ? [
     { label: 'Dashboard', path: '/govt-dashboard', icon: ShieldCheck },
+    { label: 'Emergency Alerts', path: '/govt-broadcasts', icon: Radio },
     { label: 'Source Analysis', path: '/govt-source-id', icon: PieChart },
     { label: 'Hotspot List', path: '/govt-hotspots', icon: MapPin },
     { label: 'AI Suggestions', path: '/govt-ai-suggestions', icon: Sparkles },
     { label: 'Citizen Complaints', path: '/manage-complaints', icon: List },
   ] : [];
 
-  const navItems = userRole === 'citizen' 
+  const navItems = userRole === 'citizen'
     ? [...baseItems, { label: 'Profile', path: '/profile', icon: User }, { label: 'Support', path: '/support', icon: HelpCircle }]
     : [...baseItems, { label: 'Support', path: '/support', icon: HelpCircle }];
 
@@ -70,7 +72,7 @@ export default function Sidebar() {
         </div>
 
         {/* Separator for mobile */}
-        <div className="h-16 md:hidden"></div> 
+        <div className="h-16 md:hidden"></div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4 md:mt-0 overflow-y-auto">
           {navItems.map((item) => {
@@ -81,10 +83,9 @@ export default function Sidebar() {
                 to={item.path}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                    isActive 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`
                 }
               >
@@ -108,8 +109,8 @@ export default function Sidebar() {
 
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-30 md:hidden" 
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}

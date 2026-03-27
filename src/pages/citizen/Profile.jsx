@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../services/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { User, Mail, MapPin, Save, CheckCircle2 } from 'lucide-react';
+import { User, Mail, MapPin, Save, CheckCircle2, HeartPulse } from 'lucide-react';
 
 export default function Profile() {
   const { currentUser } = useAuth();
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
+  
+  // Health Vulnerabilities
+  const [asthma, setAsthma] = useState(false);
+  const [elderly, setElderly] = useState(false);
+  const [infant, setInfant] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -24,6 +30,9 @@ export default function Profile() {
             const data = docSnap.data();
             setName(data.name || '');
             setCity(data.city || 'Delhi NCR');
+            setAsthma(!!data.asthma);
+            setElderly(!!data.elderly);
+            setInfant(!!data.infant);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
@@ -45,6 +54,9 @@ export default function Profile() {
       await updateDoc(docRef, {
         name: name,
         city: city,
+        asthma: asthma,
+        elderly: elderly,
+        infant: infant,
         updatedAt: new Date().toISOString()
       });
       setSuccessMsg('Profile updated successfully!');
@@ -141,6 +153,48 @@ export default function Profile() {
                   <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-4">
+              <HeartPulse className="text-red-500" size={20} />
+              Health Vulnerabilities
+            </h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Select any vulnerabilities to receive personalized health advisories and priority alerts.
+            </p>
+
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={asthma}
+                  onChange={(e) => setAsthma(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-medium text-slate-700">Asthma/Respiratory Issues</span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={elderly}
+                  onChange={(e) => setElderly(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-medium text-slate-700">Elderly in Household (65+)</span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={infant}
+                  onChange={(e) => setInfant(e.target.checked)}
+                  className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="font-medium text-slate-700">Infant/Toddler (Under 5)</span>
+              </label>
             </div>
           </div>
 

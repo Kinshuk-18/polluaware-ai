@@ -32,6 +32,18 @@ const createCustomIcon = (color) => {
 const sourceIcon = createCustomIcon('#3B82F6'); // blue
 const destIcon = createCustomIcon('#EF4444'); // red
 
+// Haversine formula for distance in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function SmartRoute() {
   const [source, setSource] = useState('');
   const [destination, setDestination] = useState('');
@@ -83,11 +95,22 @@ export default function SmartRoute() {
 
       const aiRouteCoords = [srcCoords, [safeMidLat, safeMidLng], destCoords];
 
+      // Calculate distances and times
+      const distance = calculateDistance(srcCoords[0], srcCoords[1], destCoords[0], destCoords[1]);
+      const standardMins = Math.round((distance / 30) * 60);
+      
+      const safeDistance = distance * 1.2; // 20% detour simulation
+      const safeMins = Math.round((safeDistance / 30) * 60);
+
       setTimeout(() => {
         setResult({
           sourceCoords: srcCoords,
           destCoords,
-          aiRouteCoords
+          aiRouteCoords,
+          distance,
+          standardMins,
+          safeDistance,
+          safeMins
         });
         setLoading(false);
       }, 1500); 
@@ -211,8 +234,9 @@ export default function SmartRoute() {
                   <div className="text-right mr-3">
                     <div className="flex items-center gap-1 font-bold text-lg text-slate-800">
                       <Clock size={18} className="text-slate-400" />
-                      35 mins
+                      {result.standardMins} mins
                     </div>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">{result.distance?.toFixed(1)} km</p>
                   </div>
                 </div>
 
@@ -238,8 +262,9 @@ export default function SmartRoute() {
                   <div className="text-right mr-3">
                     <div className="flex items-center gap-1 font-bold text-lg text-slate-800">
                       <Clock size={18} className="text-slate-400" />
-                      45 mins
+                      {result.safeMins} mins
                     </div>
+                    <p className="text-xs text-emerald-600/80 mt-1 font-medium">{result.safeDistance?.toFixed(1)} km</p>
                   </div>
                 </div>
 
